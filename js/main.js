@@ -245,7 +245,7 @@ function runWaiters() {
   for (const w of ready) w.fn();
 }
 
-let deathT = 0;
+let deathT = 0, respawnFadeT = 0;
 function updateGame() {
   const S = G.save;
   runWaiters();
@@ -261,14 +261,14 @@ function updateGame() {
   if (input.pressed.map) { G.scene = 'map'; mapState.warp = null; sfx('menu'); return; }
   if (G.hitstop > 0) { G.hitstop--; return; }
   S.time++;
+  // Fade back in after a respawn (the new player is alive, so this runs outside the dead branch).
+  if (respawnFadeT > 0) { respawnFadeT--; G.fade = respawnFadeT / 30; }
   const p = G.player;
   if (p.dead) {
     deathT++;
     if (deathT === 50) { ui.toast(S2('DEATH_01')); ui.toast(S2('DEATH_02')); }
     if (deathT > 60) G.fade = Math.min(1, (deathT - 60) / 40);
-    if (deathT === 110) { respawn(); }
-    if (deathT > 110) { G.fade = Math.max(0, 1 - (deathT - 110) / 30); }
-    if (deathT > 140) { deathT = 0; G.fade = 0; }
+    if (deathT >= 110) { deathT = 0; respawn(); G.fade = 1; respawnFadeT = 30; }
     updateFx();
     return;
   }
